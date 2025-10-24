@@ -2,3 +2,48 @@
 #
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://docs.kedro.org/en/stable/data/data_catalog.html
+
+2014.data:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/2014_data.csv
+  save_args:
+    index: False
+
+2014.data_with_salary:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/2014_data_with_salary.csv
+  save_args:
+    index: False
+
+2015.data:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/2015_data.csv
+  save_args:
+    index: False
+
+2015.data_with_salary:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/2015_data_with_salary.csv
+  save_args:
+    index: False
+
+2016.data:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/2016_data.csv
+  save_args:
+    index: False
+
+2016.data_with_salary:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/2016_data_with_salary.csv
+  save_args:
+    index: False
+
+
+occ_to_soc:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/occ_to_soc.csv
+
+soc_to_sal:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/soc_to_sal_states_2017.csv

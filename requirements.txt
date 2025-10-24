@@ -2,3 +2,14 @@ ipython>=8.10
 jupyterlab>=3.0
 notebook
 kedro~=1.0.0
+kedro-datasets==8.1.0
+kedro-viz>=6.7.0
+folktables==0.0.12
+numpy==2.3.4
+pandas==2.3.3
+scikit-learn==1.7.2
+matplotlib==3.10.7
+fairlearn==0.13.0
+
+# dev-dependency
+ruff==0.14.0

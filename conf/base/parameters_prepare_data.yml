@@ -1,5 +1,16 @@
-# This is a boilerplate parameters config generated for pipeline 'preprocess_data'
+# This is a boilerplate parameters config generated for pipeline 'prepare_data'
 # using Kedro 1.0.0.
 #
 # Documentation for this file format can be found in "Parameters"
 # Link: https://docs.kedro.org/en/1.0.0/configuration/parameters.html
+
+2014:
+  year: 2014
+
+2015:
+  year: 2015
+
+2016:
+  year: 2016
+
+state: CA

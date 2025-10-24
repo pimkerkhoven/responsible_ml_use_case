@@ -5,7 +5,7 @@ from __future__ import annotations
 from kedro.framework.project import find_pipelines
 from kedro.pipeline import Pipeline
 
-from src.rml_vision_usecase.pipelines.prepare_data.pipeline import (
+from src.rml_vision_usecase.pipelines.download_data.pipeline import (
     create_2014_pipeline,
     create_2015_pipeline,
     create_2016_pipeline,

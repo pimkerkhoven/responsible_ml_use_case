@@ -1,5 +1,5 @@
 """
-This is a boilerplate pipeline 'prepare_data'
+This is a boilerplate pipeline 'download_data'
 generated using Kedro 1.0.0
 """
 

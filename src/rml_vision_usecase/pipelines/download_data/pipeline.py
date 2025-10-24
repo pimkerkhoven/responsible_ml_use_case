@@ -1,6 +1,6 @@
 from kedro.pipeline import Node, Pipeline  # noqa
 
-from src.rml_vision_usecase.pipelines.prepare_data.nodes import (
+from src.rml_vision_usecase.pipelines.download_data.nodes import (
     download_data,
     create_occ_to_sal,
     augment_with_salary_data,

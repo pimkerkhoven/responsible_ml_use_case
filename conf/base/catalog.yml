@@ -47,3 +47,18 @@ occ_to_soc:
 soc_to_sal:
   type: pandas.CSVDataset
   filepath: data/01_raw/soc_to_sal_states_2017.csv
+
+
+train_data:
+  type: pandas.CSVDataset
+  filepath: data/03_primary/train.csv
+
+test_data:
+  type: pandas.CSVDataset
+  filepath: data/03_primary/test.csv
+
+
+fitted_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/model.pickle
+#  versioned: true

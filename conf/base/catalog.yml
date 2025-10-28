@@ -9,21 +9,9 @@
   save_args:
     index: False
 
-2014.data_with_salary:
-  type: pandas.CSVDataset
-  filepath: data/02_intermediate/2014_data_with_salary.csv
-  save_args:
-    index: False
-
 2015.data:
   type: pandas.CSVDataset
   filepath: data/01_raw/2015_data.csv
-  save_args:
-    index: False
-
-2015.data_with_salary:
-  type: pandas.CSVDataset
-  filepath: data/02_intermediate/2015_data_with_salary.csv
   save_args:
     index: False
 
@@ -32,13 +20,6 @@
   filepath: data/01_raw/2016_data.csv
   save_args:
     index: False
-
-2016.data_with_salary:
-  type: pandas.CSVDataset
-  filepath: data/02_intermediate/2016_data_with_salary.csv
-  save_args:
-    index: False
-
 
 occ_to_soc:
   type: pandas.CSVDataset
@@ -62,3 +43,13 @@ fitted_model:
   type: pickle.PickleDataset
   filepath: data/06_models/model.pickle
 #  versioned: true
+#
+#naive_bayes.fitted_model:
+#  type: pickle.PickleDataset
+#  filepath: data/06_models/naive_bayes.pickle
+##  versioned: true
+#
+#decision_tree.fitted_model:
+#  type: pickle.PickleDataset
+#  filepath: data/06_models/decision_tree.pickle
+##  versioned: true

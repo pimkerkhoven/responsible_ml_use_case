@@ -160,6 +160,6 @@ venv.bak/
 
 # mlflow local runs
 mlruns/*
-
+mlflow_runs/
 
 data/

@@ -5,6 +5,11 @@ generated using Kedro 1.0.0
 
 import numpy as np
 import pandas as pd
+
+
+import mlflow
+
+
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -16,39 +21,82 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer, OneHotEnc
 from sklearn.tree import DecisionTreeClassifier
 
 
-def make_train_test_split(data_2014, data_2015):
+def _engineer_features(X, new_features):
+    if new_features is None:
+        return X
+
+    if "AGE_WKHP" in new_features:
+        X["AGE_WKHP"] = X["WKHP"] * X["AGEP"]
+    if "AGE_WKHP_CAT" in new_features:
+        X["AGE_WKHP_CAT"] = (X["WKHP"] * X["AGEP"]) > 1200
+
+    return X
+
+
+def _log_data_in_mlflow(test_X, test_y, train_X, train_y, val_X, val_y):
+    train_data = pd.concat([train_X, train_y], axis=1)
+    val_data = pd.concat([val_X, val_y], axis=1)
+    test_data = pd.concat([test_X, test_y], axis=1)
+
+    train_dataset = mlflow.data.from_pandas(
+        train_data, name="ACS_INCOME", targets="TARGET"
+    )
+    val_dataset = mlflow.data.from_pandas(val_data, name="ACS_INCOME", targets="TARGET")
+    test_dataset = mlflow.data.from_pandas(
+        test_data, name="ACS_INCOME", targets="TARGET"
+    )
+
+    mlflow.log_input(train_dataset, context="training")
+    mlflow.log_input(val_dataset, context="validation")
+    mlflow.log_input(test_dataset, context="testing")
+
+    return train_dataset, val_dataset, test_dataset
+
+
+def make_train_test_split(data_2014, data_2015, drop_features, new_features):
+    if drop_features is None:
+        drop_features = []
+
     data = pd.concat([data_2014, data_2015], ignore_index=True)
-    train, test = train_test_split(data, test_size=0.2, random_state=42)
 
-    return train, test
+    y = data["TARGET"]
+    X = data.drop(drop_features + ["TARGET"], axis=1)
 
+    X = _engineer_features(X, new_features)
 
-def drop_columns(train, test, columns):
-    train_y = train["TARGET"]
-    train_X = train.drop(["TARGET"], axis=1)
-    train_X = train_X[columns]
+    train_X, test_X, train_y, test_y = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
-    test_y = test["TARGET"]
-    test_X = test.drop(["TARGET"], axis=1)
-    test_X = test_X[columns]
+    train_X, val_X, train_y, val_y = train_test_split(
+        train_X, train_y, test_size=0.2, random_state=42
+    )
 
-    return train_X, train_y, test_X, test_y
+    mlflow_train_dataset, mlflow_val_dataset, mlflow_test_dataset = _log_data_in_mlflow(
+        test_X,
+        test_y,
+        train_X,
+        train_y,
+        val_X,
+        val_y,
+    )
 
+    return (
+        train_X,
+        train_y,
+        val_X,
+        val_y,
+        test_X,
+        test_y,
+        mlflow_train_dataset,
+        mlflow_val_dataset,
+        mlflow_test_dataset,
+    )
 
-def feature_engineering(train_X, test_X, features):
-    if features is None:
-        return train_X, test_X
-
-    for data in [train_X, test_X]:
-        if "AGE_WKHP" in features:
-            data["AGE_WKHP"] = data["WKHP"] * data["AGEP"]
-        if "AGE_WKHP_CAT" in features:
-            data["AGE_WKHP_CAT"] = (data["WKHP"] * data["AGEP"]) > 1200
-
-    return train_X, test_X
 
 def _to_category(x):
     return x.astype("category")
+
 
 def define_model_pipeline(model):
     numerical_features = [
@@ -69,8 +117,6 @@ def define_model_pipeline(model):
         "RAC1P",
         "AGE_WKHP_CAT",
     ]
-
-
 
     return Pipeline(
         steps=[
@@ -119,21 +165,27 @@ def define_model_pipeline(model):
     )
 
 
+def _df_to_array(df):
+    return df.toarray()
+
+
 def define_model(parameters):
-    if parameters["type"] == "logistic-regression":
-        model = LogisticRegression(max_iter=10_000)
-
-        # parameter_grid["clf__C"] = (0.1, 1)
-    elif parameters["type"] == "decision-tree":
-        model = DecisionTreeClassifier()
-
-        # parameter_grid["clf__min_samples_leaf"] = [50, 60, 70]
-    elif parameters["type"] == "naive-bayes":
+    if parameters["type"] == "logistic_regression":
+        if parameters["params"] is not None:
+            model = LogisticRegression(max_iter=10_000, C=parameters["params"]["C"])
+        else:
+            model = LogisticRegression(max_iter=10_000)
+    elif parameters["type"] == "decision_tree":
+        if parameters["params"] is not None:
+            model = DecisionTreeClassifier(min_samples_leaf=parameters["params"]["min_samples_leaf"])
+        else:
+            model = DecisionTreeClassifier()
+    elif parameters["type"] == "naive_bayes":
         model = GaussianNB()
 
         model = Pipeline(
             steps=[
-                ("convert_sparse", FunctionTransformer(lambda X: X.toarray())),
+                ("convert_sparse", FunctionTransformer(_df_to_array)),
                 ("model", model),
             ]
         )
@@ -143,7 +195,39 @@ def define_model(parameters):
     return model  # parameter_grid
 
 
-def train(train_X, train_y, model):
+def train_model(
+    train_X,
+    train_y,
+    val_X,
+    val_y,
+    model,
+    parameters,
+    mlflow_train_dataset,
+    mlflow_val_dataset,
+):
     model.fit(train_X, train_y)
 
-    return model
+    mlflow.log_metric(
+        "training_accuracy", model.score(train_X, train_y), dataset=mlflow_train_dataset
+    )
+    validation_accuracy = model.score(val_X, val_y)
+    mlflow.log_metric(
+        "validation_accuracy", validation_accuracy, dataset=mlflow_val_dataset
+    )
+    signature = mlflow.models.infer_signature(train_X, model.predict(train_X))
+
+    mlflow.sklearn.log_model(
+        sk_model=model,
+        name=parameters["type"],
+        signature=signature,
+        input_example=train_X,
+        # registered_model_name="tracking-quickstart",
+    )
+
+    return model, validation_accuracy
+
+
+# def validate_model(val_X, val_y, model):
+#     model.score(val_X, val_y)
+#
+#     return model

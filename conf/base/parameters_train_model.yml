@@ -5,23 +5,24 @@
 # Link: https://docs.kedro.org/en/1.0.0/configuration/parameters.html
 
 model:
-  type: logistic-regression
+  type: ${runtime_params:model_type, null}
+  params: ${runtime_params:model_params, null}
 
-columns:
-  - "AGEP"
-  - "WKHP"
-#  - "AGE_WKHP_NUM"
-  - "MEAN_SALARY"
-  - "HOUR_RATE"
-  - "COW"
-  - "SCHL"
-  - "MAR"
-  - "OCCP"
-  - "POBP"
-  - "RELP"
-  - "SEX"
-  - "RAC1P"
-#  - "AGE_WKHP_CAT"
+drop_features: ${runtime_params:drop_features, null}
+#  - "AGEP"
+#  - "WKHP"
+##  - "AGE_WKHP_NUM"
+##  - "MEAN_SALARY"
+##  - "HOUR_RATE"
+#  - "COW"
+#  - "SCHL"
+#  - "MAR"
+#  - "OCCP"
+#  - "POBP"
+#  - "RELP"
+#  - "SEX"
+#  - "RAC1P"
+##  - "AGE_WKHP_CAT"
 
 
-new_features:
+new_features: ${runtime_params:new_features, null}

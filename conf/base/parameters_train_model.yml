@@ -8,6 +8,12 @@ model:
   type: ${runtime_params:model_type, null}
   params: ${runtime_params:model_params, null}
 
+
+augment_features: ${runtime_params:augment_features, null}
+#  - MEAN_SALARY
+#  - HOUR_RATE
+
+
 drop_features: ${runtime_params:drop_features, null}
 #  - "AGEP"
 #  - "WKHP"
@@ -25,4 +31,4 @@ drop_features: ${runtime_params:drop_features, null}
 ##  - "AGE_WKHP_CAT"
 
 
-new_features: ${runtime_params:new_features, null}
+engineered_features: ${runtime_params:engineered_features, null}

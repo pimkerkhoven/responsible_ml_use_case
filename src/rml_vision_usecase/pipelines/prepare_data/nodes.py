@@ -9,30 +9,41 @@ import logging
 import sys
 
 import numpy as np
+import pandas as pd
 
 from folktables import ACSDataSource, ACSIncome
+from sklearn.model_selection import train_test_split
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
-def download_data(year, state, download):
-    # with tempfile.TemporaryDirectory() as temp_dir:
-    #     logger = logging.getLogger(__name__)
-    #     logger.info(f"Temporary directory created at: {temp_dir}")
+def download_data(year, state):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # logger = logging.getLogger(__name__)
+        # logger.info(f"Temporary directory created at: {temp_dir}")
 
-    data_source = ACSDataSource(
-        survey_year=f"{year}",
-        horizon="1-Year",
-        survey="person",
-        root_dir="data/01_raw/",
-    )
-    acs_data = data_source.get_data(states=[state], download=download)
-    data, y, _ = ACSIncome.df_to_pandas(acs_data)
+        data_source = ACSDataSource(
+            survey_year=f"{year}",
+            horizon="1-Year",
+            survey="person",
+            root_dir=temp_dir,
+        )
+        acs_data = data_source.get_data(states=[state], download=True)
+        data, y, _ = ACSIncome.df_to_pandas(acs_data)
 
-    # add target label to data
-    data["TARGET"] = y["PINCP"]
+        # add target label to data
+        data["TARGET"] = y["PINCP"]
 
-    return data
+        return data
+
+
+def make_data_splits(data_2014, data_2015):
+    data = pd.concat([data_2014, data_2015], ignore_index=True)
+
+    train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+    train_data, val_data = train_test_split(train_data, test_size=0.2, random_state=42)
+
+    return train_data, val_data, test_data
 
 
 def create_occ_to_sal(occ_to_soc, soc_to_sal, state):
@@ -76,23 +87,24 @@ def create_occ_to_sal(occ_to_soc, soc_to_sal, state):
     return result
 
 
-def augment_with_salary_data(data, occ_to_sal, augment_features):
-    if augment_features is None:
-        return data
-
-    if "MEAN_SALARY" in augment_features:
-        data["MEAN_SALARY"] = (
-            data["OCCP"]
-            .astype(int)
-            .map(lambda x: occ_to_sal[x][0] if x in occ_to_sal else np.nan)
-        )
-
-    if "HOUR_RATE" in augment_features:
-        data["HOUR_RATE"] = (
-            data["OCCP"]
-            .astype(int)
-            .map(lambda x: occ_to_sal[x][1] if x in occ_to_sal else np.nan)
-            * data["WKHP"]
-        )
-
-    return data
+# TODO: move to train pipeline as a step
+# def augment_with_salary_data(data, occ_to_sal, augment_features):
+#     if augment_features is None:
+#         return data
+#
+#     if "MEAN_SALARY" in augment_features:
+#         data["MEAN_SALARY"] = (
+#             data["OCCP"]
+#             .astype(int)
+#             .map(lambda x: occ_to_sal[x][0] if x in occ_to_sal else np.nan)
+#         )
+#
+#     if "HOUR_RATE" in augment_features:
+#         data["HOUR_RATE"] = (
+#             data["OCCP"]
+#             .astype(int)
+#             .map(lambda x: occ_to_sal[x][1] if x in occ_to_sal else np.nan)
+#             * data["WKHP"]
+#         )
+#
+#     return data

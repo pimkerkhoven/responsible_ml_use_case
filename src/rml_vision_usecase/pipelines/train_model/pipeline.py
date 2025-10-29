@@ -6,10 +6,14 @@ generated using Kedro 1.0.0
 from kedro.pipeline import Node, Pipeline  # noqa
 
 from src.rml_vision_usecase.pipelines.train_model.nodes import (
-    make_train_test_split,
     define_model_pipeline,
     define_model,
     train_model,
+    validate_model,
+    define_responsible_model_pipeline,
+    multi_objective_train_model,
+    train_models_given_hyperparams,
+    validate_models, train_fairness_ranker,
 )
 
 
@@ -17,89 +21,92 @@ def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
             Node(
-                func=make_train_test_split,
-                inputs=[
-                    "2014.data_with_salary",
-                    "2015.data_with_salary",
-                    "params:drop_features",
-                    "params:new_features",
-                ],
-                outputs=[
-                    "train_X",
-                    "train_y",
-                    "val_X",
-                    "val_y",
-                    "test_X",
-                    "test_y",
-                    "mlflow_train_dataset",
-                    "mlflow_val_dataset",
-                    "mlflow_test_dataset",
-                ],
-                name="make_train_test_split",
-            ),
-            Node(
                 func=define_model,
                 inputs="params:model",
                 outputs="model",
                 name="define_model",
+                tags=["traditional", "responsible"],
             ),
             Node(
                 func=define_model_pipeline,
-                inputs="model",
+                inputs=[
+                    "model",
+                    "params:augment_features",
+                    "params:drop_features",
+                    "params:engineered_features",
+                    "occ_to_sal",
+                ],
                 outputs="model_pipeline",
                 name="define_model_pipeline",
+                tags=["traditional", "responsible"],
             ),
+            # Traditional training
             Node(
                 func=train_model,
                 inputs=[
-                    "train_X",
-                    "train_y",
-                    "val_X",
-                    "val_y",
+                    "train_data",
                     "model_pipeline",
                     "params:model",
-                    "mlflow_train_dataset",
-                    "mlflow_val_dataset",
                 ],
-                outputs=["fitted_model", "validation_accuracy"],
+                outputs="fitted_model",
                 name="train_model",
+                tags="traditional",
             ),
-            # Node(
-            #     func=validate_model,
-            #     inputs=["val_X", "val_y", "trained_model"],
-            #     outputs="fitted_model",
-            #     name="validate_model",
-            # ),
+            Node(
+                func=validate_model,
+                inputs=["validation_data", "fitted_model"],
+                outputs="validation_accuracy",
+                name="validate_model",
+                tags="traditional",
+            ),
+            # Responsible training
+            Node(
+                func=train_fairness_ranker,
+                inputs="train_data",
+                outputs="fairness_ranker",
+                name="train_fairness_ranker",
+                tags="responsible_assist",
+            ),
+            Node(
+                func=define_responsible_model_pipeline,
+                inputs=["model_pipeline"],
+                outputs="create_responsible_pipeline",
+                name="define_responsible_model_pipeline",
+                tags="responsible",
+            ),
+            Node(
+                func=multi_objective_train_model,
+                inputs=[
+                    "train_data",
+                    "create_responsible_pipeline",
+                    "fairness_ranker",
+                ],
+                outputs="pareto_front_model_hyperparams",
+                name="multi_objective_train_model",
+                tags="responsible",
+            ),
+            Node(
+                func=train_models_given_hyperparams,
+                inputs=[
+                    "train_data",
+                    "pareto_front_model_hyperparams",
+                    "create_responsible_pipeline",
+                    "fairness_ranker"
+                ],
+                outputs="fitted_models",
+                name="train_models_given_hyperparams",
+                tags="responsible",
+            ),
+            Node(
+                func=validate_models,
+                inputs=[
+                    "validation_data",
+                    "fitted_models",
+                    "params:model",
+                ],
+                outputs="final_output",
+                name="validate_models",
+                tags="responsible",
+            ),
         ]
     )
-
-
-# base_train_pipeline = Pipeline(
-#     [
-#
-#     ]
-# )
-#
-#
-# def create_logistic_regression_pipeline(**kwargs) -> Pipeline:
-#     return Pipeline(
-#         [base_train_pipeline],
-#         namespace="linear_regression",
-#         inputs={"train_X", "train_y"},
-#     )
-#
-#
-# def create_naive_bayes_pipeline(**kwargs) -> Pipeline:
-#     return Pipeline(
-#         [base_train_pipeline],
-#         namespace="naive_bayes",
-#         inputs={"train_X", "train_y"},
-#     )
-#
-#
-# def create_decision_tree_pipeline(**kwargs) -> Pipeline:
-#     return Pipeline(
-#         [base_train_pipeline],
-#         namespace="decision_tree",
-#         inputs={"train_X", "train_y"},
-#     )

@@ -14,8 +14,4 @@
   year: 2016
 
 state: CA
-download: False
 
-augment_features: ${runtime_params:augment_features, null}
-#  - MEAN_SALARY
-#  - HOUR_RATE

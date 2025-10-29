@@ -21,12 +21,4 @@ with mlflow.start_run():
             project_path=project_root, runtime_params={"model_type": model_type}
         ) as session:
             with mlflow.start_run(run_name=model_type, nested=True):
-                session.run(
-                    from_nodes=[
-                        "2014.augment_data_with_salary",
-                        "2015.augment_data_with_salary",
-                        "2016.augment_data_with_salary",
-                        "create_occ_to_sal",
-                        "define_model",
-                    ]
-                )
+                session.run(pipeline_name="train_model")

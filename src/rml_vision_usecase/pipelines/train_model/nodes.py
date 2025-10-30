@@ -342,8 +342,8 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
             model_privacy,
         ]
 
-    MAX_FUNC_EVAL = 200  # 10_000
-    POPULATION_SIZE = 50  # 50
+    MAX_FUNC_EVAL = 10_000
+    POPULATION_SIZE = 50
 
     # Define optimization problem
     opt_problem = Problem(8, 5)
@@ -517,5 +517,3 @@ def validate_models(validation_data, models, model_params):
                 signature=signature,
                 input_example=val_X.head(5),
             )
-
-    return "Done"

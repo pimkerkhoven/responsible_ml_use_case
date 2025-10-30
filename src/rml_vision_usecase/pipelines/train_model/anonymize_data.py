@@ -35,8 +35,6 @@ def apply_hierarchy(data, hierarchies, level):
     for i in range(len(previous_level)):
         hierarchy_map[previous_level[i]] = new_level[i]
 
-
-
     # print(hierarchy_map)
 
     # pos = []

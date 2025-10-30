@@ -105,7 +105,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "fitted_models",
                     "params:model",
                 ],
-                outputs="final_output",
+                outputs=None,
                 name="validate_models",
                 tags="responsible",
             ),

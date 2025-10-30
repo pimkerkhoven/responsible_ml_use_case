@@ -14,15 +14,19 @@ bootstrap_project(Path(project_root))
 mlflow.set_experiment("Test Models")
 
 runs = {
-    "initial": [
-        ("Logistic regression", "initial_logistic_regression"),
-        ("Decision tree", "initial_decision_tree"),
-        ("Naive bayes", "initial_naive_bayes"),
-    ],
-    "improved": [
-        ("Logistic regression", "improved_logistic_regression"),
-        ("Decision tree", "improved_decision_tree"),
-        ("Naive bayes", "improved_naive_bayes"),
+    # "initial": [
+    #     ("Logistic regression", "initial_logistic_regression"),
+    #     ("Decision tree", "initial_decision_tree"),
+    #     ("Naive bayes", "initial_naive_bayes"),
+    # ],
+    # "improved": [
+    #     ("Logistic regression", "improved_logistic_regression"),
+    #     ("Decision tree", "improved_decision_tree"),
+    #     ("Naive bayes", "improved_naive_bayes"),
+    # ],
+    "responsible": [
+        ("Traditional system", "improved_logistic_regression"),
+        ("Responsible system", "responsible_model"),
     ],
 }
 
@@ -47,12 +51,12 @@ with mlflow.start_run():
                     },
                 ) as session:
                     with mlflow.start_run(run_name=model_name, nested=True):
-                        res = session.run(pipeline_name="test_model")
+                        res = session.run(pipeline_name="test_model", tags=[run_name])
                         (fpr, tpr) = res["roc_curve"].load()
 
                         ax.plot(fpr, tpr, label=model_name.title())
 
-                plt.legend(loc=4)
-                plt.grid()
+                ax.legend(loc=4)
+                ax.grid()
                 mlflow.log_figure(fig, f"roc_curves_{run_name}.png")
                 plt.close()

@@ -50,3 +50,6 @@ attr = "rml_vision_usecase.__version__"
 [tool.setuptools.packages.find]
 where = [ "src",]
 namespaces = false
+
+[tool.pyright]
+typeCheckingMode = "off"

@@ -13,7 +13,8 @@ from src.rml_vision_usecase.pipelines.train_model.nodes import (
     define_responsible_model_pipeline,
     multi_objective_train_model,
     train_models_given_hyperparams,
-    validate_models, train_fairness_ranker,
+    validate_models,
+    train_fairness_ranker,
 )
 
 
@@ -91,7 +92,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "train_data",
                     "pareto_front_model_hyperparams",
                     "create_responsible_pipeline",
-                    "fairness_ranker"
+                    "fairness_ranker",
                 ],
                 outputs="fitted_models",
                 name="train_models_given_hyperparams",

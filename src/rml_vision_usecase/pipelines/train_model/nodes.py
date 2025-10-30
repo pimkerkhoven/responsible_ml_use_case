@@ -5,30 +5,29 @@ generated using Kedro 1.0.0
 
 from copy import deepcopy
 
+import matplotlib.pyplot as plt
+import mlflow
 import numpy as np
 import pandas as pd
 from fairlearn.metrics import demographic_parity_difference
-
 from platypus import NSGAII, Problem, Real, nondominated
-
-
-import mlflow
 from sklearn.base import BaseEstimator
-
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score
-
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, FunctionTransformer, OneHotEncoder
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
 from src.rml_vision_usecase.pipelines.train_model.anonymize_data import anonymizeData
 from src.rml_vision_usecase.pipelines.train_model.evaluate_privacy import (
     evaluate_privacy,
+)
+from src.rml_vision_usecase.pipelines.train_model.make_radar_plot import (
+    create_radar_plot,
 )
 from src.rml_vision_usecase.pipelines.train_model.massage_data import massage_data
 
@@ -227,7 +226,9 @@ def train_model(train_data, model, parameters):
     mlflow.log_metric(
         "training_accuracy", model.score(train_X, train_y), dataset=mlflow_train_data
     )
-    signature = mlflow.models.infer_signature(train_X.head(5), model.predict(train_X.head(5)))
+    signature = mlflow.models.infer_signature(
+        train_X.head(5), model.predict(train_X.head(5))
+    )
 
     mlflow.sklearn.log_model(
         sk_model=model,
@@ -267,12 +268,16 @@ def define_responsible_model_pipeline(o_model_pipeline):
 
     return create_responsible_pipeline
 
+
 def train_fairness_ranker(train_data):
-    return LogisticRegression(max_iter=10_000).fit(train_data.drop(["TARGET", "SEX"], axis=1), train_data["TARGET"])
+    return LogisticRegression(max_iter=10_000).fit(
+        train_data.drop(["TARGET", "SEX"], axis=1), train_data["TARGET"]
+    )
 
 
 SAMPLE_SIZE = 0.005
 VAL_SIZE = 0.25
+
 
 def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
     privacy_X = data.sample(frac=0.025, axis=0)
@@ -299,8 +304,11 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
 
         # Preprocess data
         y_massaged = massage_data(
-            X_train, y_train, sensitive_feature=sens_train, f_perc=fairness_level,
-            ranker=fairness_ranker
+            X_train,
+            y_train,
+            sensitive_feature=sens_train,
+            f_perc=fairness_level,
+            ranker=fairness_ranker,
         )
 
         model = create_model_pipeline(
@@ -316,9 +324,7 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
         y_val_pred = model.predict(X_val)
 
         model_accuracy = accuracy_score(y_true=y_val, y_pred=y_val_pred)
-        model_precision = precision_score(
-            y_true=y_val, y_pred=y_val_pred, zero_division=np.nan
-        )
+        model_precision = precision_score(y_true=y_val, y_pred=y_val_pred)
         model_fairness = demographic_parity_difference(
             y_true=y_val, y_pred=y_val_pred, sensitive_features=sens_val
         )
@@ -336,7 +342,7 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
             model_privacy,
         ]
 
-    MAX_FUNC_EVAL = 200 # 10_000
+    MAX_FUNC_EVAL = 200  # 10_000
     POPULATION_SIZE = 50  # 50
 
     # Define optimization problem
@@ -398,7 +404,9 @@ def validate_model(validation_data, model):
     return validation_accuracy
 
 
-def train_models_given_hyperparams(train_data, hyperparams, create_model_pipeline, fairness_ranker):
+def train_models_given_hyperparams(
+    train_data, hyperparams, create_model_pipeline, fairness_ranker
+):
     mlflow_train_data = mlflow.data.from_pandas(
         train_data, name="ACS_INCOME", targets="TARGET"
     )
@@ -418,8 +426,11 @@ def train_models_given_hyperparams(train_data, hyperparams, create_model_pipelin
         )
 
         y_massaged = massage_data(
-            train_X, train_y, sensitive_feature=sens_train, f_perc=fairness_level,
-            ranker=fairness_ranker
+            train_X,
+            train_y,
+            sensitive_feature=sens_train,
+            f_perc=fairness_level,
+            ranker=fairness_ranker,
         )
 
         model = create_model_pipeline(
@@ -441,21 +452,19 @@ def validate_models(validation_data, models, model_params):
     val_X = validation_data.drop(["TARGET", "SEX"], axis=1)
     sens_data = validation_data["SEX"]
 
-    for model in models:
+    for i, model in enumerate(models):
         with mlflow.start_run(nested=True):
             tree_depth = model["clf"].get_depth()
 
             y_pred = model.predict(val_X)
 
             validation_accuracy = accuracy_score(y_true=val_y, y_pred=y_pred)
-            validation_precision = precision_score(
-                y_true=val_y, y_pred=y_pred
-            )
-            validation_fairness = demographic_parity_difference(
+            validation_precision = precision_score(y_true=val_y, y_pred=y_pred)
+            validation_fairness = 1 - demographic_parity_difference(
                 y_true=val_y, y_pred=y_pred, sensitive_features=sens_data
             )
-            validation_privacy = evaluate_privacy(val_X, sens_data, model)
-
+            validation_privacy = 1 - evaluate_privacy(val_X, sens_data, model)
+            validation_explainability = 1 - (tree_depth / 100)
 
             # validation_accuracy = model.score(val_X, val_y)
             # f"Training results - depth: {tree_depth}, precision: {1 - model_precision}, accuracy: {1 - model_accuracy},fairness: {model_fairness}, privacy: {model_privacy}"
@@ -467,17 +476,40 @@ def validate_models(validation_data, models, model_params):
                 "validation_precision", validation_precision, dataset=mlflow_val_data
             )
             mlflow.log_metric(
-                "validation_fairness", 1 - validation_fairness, dataset=mlflow_val_data
+                "validation_fairness", validation_fairness, dataset=mlflow_val_data
             )
             mlflow.log_metric(
-                "validation_privacy", 1 - validation_privacy, dataset=mlflow_val_data
+                "validation_privacy", validation_privacy, dataset=mlflow_val_data
             )
             mlflow.log_metric(
-                "validation_explainability", 1 - (tree_depth / 100), dataset=mlflow_val_data
+                "validation_explainability",
+                validation_explainability,
+                dataset=mlflow_val_data,
             )
-            # TODO: add responsible models; generate star plot as artifact
 
-            signature = mlflow.models.infer_signature(val_X.head(5), model.predict(val_X.head(5)))
+            radar_plot = create_radar_plot(
+                data=[
+                    validation_precision,
+                    validation_accuracy,
+                    validation_privacy,
+                    validation_fairness,
+                    validation_explainability,
+                ],
+                labels=[
+                    "Precision",
+                    "Accuracy",
+                    "Privacy",
+                    "Fairness",
+                    "Explainability",
+                ],
+                color_index=i,
+            )
+            mlflow.log_figure(radar_plot, f"radar_plot_{i}.png")
+            plt.close()
+
+            signature = mlflow.models.infer_signature(
+                val_X.head(5), model.predict(val_X.head(5))
+            )
 
             mlflow.sklearn.log_model(
                 sk_model=model,

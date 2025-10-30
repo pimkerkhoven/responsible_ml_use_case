@@ -20,7 +20,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             Node(
                 func=test_model,
                 inputs=["test_data", "loaded_model"],
-                outputs="test_accuracy",
+                outputs="roc_curve",
                 name="test_model",
             ),
         ]

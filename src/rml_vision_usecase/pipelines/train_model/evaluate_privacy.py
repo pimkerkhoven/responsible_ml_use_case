@@ -11,4 +11,4 @@ def evaluate_privacy(X, sex, model):
     clf = LogisticRegression(max_iter=10_000)
     clf.fit(X_train, y_train)
 
-    return abs(0.5 - clf.score(X_test, y_test))
+    return 2 * abs(0.5 - clf.score(X_test, y_test))

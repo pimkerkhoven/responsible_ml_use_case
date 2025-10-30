@@ -5,6 +5,7 @@ generated using Kedro 1.0.0
 
 import mlflow
 import mlflow.sklearn
+from sklearn.metrics import roc_auc_score, roc_curve
 
 
 def load_model(model_name, model_version):
@@ -23,7 +24,16 @@ def test_model(test_data, model):
     test_y = test_data["TARGET"]
     test_X = test_data.drop(["TARGET"], axis=1)
 
-    test_accuracy = model.score(test_X, test_y)
-    mlflow.log_metric("test_accuracy", test_accuracy, dataset=mlflow_test_data)
+    accuracy = model.score(test_X, test_y)
 
-    return test_accuracy
+    if hasattr(model, "decision_function"):
+        fpr, tpr, _ = roc_curve(test_y, model.decision_function(test_X))
+        auc_score = roc_auc_score(test_y, model.decision_function(test_X))
+    else:
+        fpr, tpr, _ = roc_curve(test_y, model.predict_proba(test_X)[:, 1])
+        auc_score = roc_auc_score(test_y, model.predict_proba(test_X)[:, 1])
+
+    mlflow.log_metric("accuracy", accuracy, dataset=mlflow_test_data)
+    mlflow.log_metric("auc_score", auc_score, dataset=mlflow_test_data)
+
+    return (fpr, tpr)

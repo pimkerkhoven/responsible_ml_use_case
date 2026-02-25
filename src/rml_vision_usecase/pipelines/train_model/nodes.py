@@ -8,7 +8,6 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
-import pandas as pd
 from fairlearn.metrics import demographic_parity_difference
 from platypus import NSGAII, Problem, Real, nondominated
 from sklearn.base import BaseEstimator
@@ -75,7 +74,7 @@ class EngineerFeatures(BaseEstimator):
         if "AGE_WKHP" in self.features:
             X["AGE_WKHP"] = X["WKHP"] * X["AGEP"]
             if "AGE_WKHP_CAT" in self.features:
-                X["AGE_WKHP_CAT"] = (X["WKHP"] * X["AGEP"]) > 1200
+                X["AGE_WKHP_CAT"] = (X["WKHP"] * X["AGEP"]) > 1200  # noqa: PLR2004
 
         return X
 
@@ -289,9 +288,9 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
         fairness_level = variables[6]
         min_samples_leaf = variables[7]
 
-        print(
-            f"Execute train for - (Generalizer):{generalization_scheme}, f:{fairness_level}, d:{min_samples_leaf}"
-        )
+        # print(
+        #     f"Execute train for - (Generalizer):{generalization_scheme}, f:{fairness_level}, d:{min_samples_leaf}"
+        # )
 
         # Sample subset of all training data to generate train and validation data
         train_data = data.sample(frac=SAMPLE_SIZE, axis=0)
@@ -331,9 +330,9 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
         model_privacy = evaluate_privacy(privacy_X, privacy_sex, model)
 
         # We want to minimize all the targets
-        print(
-            f"Training results - depth: {tree_depth}, precision: {1 - model_precision}, accuracy: {1 - model_accuracy},fairness: {model_fairness}, privacy: {model_privacy}"
-        )
+        # print(
+        #     f"Training results - depth: {tree_depth}, precision: {1 - model_precision}, accuracy: {1 - model_accuracy},fairness: {model_fairness}, privacy: {model_privacy}"
+        # )
         return [
             tree_depth,
             1 - model_precision,
@@ -365,13 +364,13 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
 
     # Run optimization process
     algorithm.run(
-        MAX_FUNC_EVAL, callback=lambda a: print(f"ALG STEP: {a.nfe}/{MAX_FUNC_EVAL}")
+        MAX_FUNC_EVAL  # callback=lambda a: print(f"ALG STEP: {a.nfe}/{MAX_FUNC_EVAL}")
     )
 
     # Store parameters used to train the models on the Pareto-front
     nondominated_solutions = nondominated(algorithm.result)
 
-    print(nondominated_solutions)
+    # print(nondominated_solutions)
 
     pareto_variables = []
     for sol in nondominated_solutions:
@@ -382,7 +381,7 @@ def multi_objective_train_model(data, create_model_pipeline, fairness_ranker):
 
         pareto_variables.append((g, f, d))
 
-    print(pareto_variables)
+    # print(pareto_variables)
 
     return pareto_variables
 
@@ -418,12 +417,12 @@ def train_models_given_hyperparams(
 
     models = []
     for i, (transformation, fairness_level, min_samples_leaf) in enumerate(hyperparams):
-        print(f"{i + 1}/{len(hyperparams)}")
-        print(
-            f"START - Transformation:{transformation}, "
-            f"fairness_level:{fairness_level:.2f}, "
-            f"min_samples_leaf:{min_samples_leaf:.2f}"
-        )
+        # print(f"{i + 1}/{len(hyperparams)}")
+        # print(
+        #     f"START - Transformation:{transformation}, "
+        #     f"fairness_level:{fairness_level:.2f}, "
+        #     f"min_samples_leaf:{min_samples_leaf:.2f}"
+        # )
 
         y_massaged = massage_data(
             train_X,

@@ -1,8 +1,5 @@
-import pandas as pd
 import numpy as np
 import pandas.api.types as ptypes
-
-
 from sklearn.base import BaseEstimator
 
 QIS = ["COW", "WKHP", "SCHL", "MAR", "OCCP", "POBP"]
@@ -29,7 +26,7 @@ def apply_hierarchy(data, hierarchies, level):
     new_level = hierarchies[level]
 
     if len(previous_level) != len(new_level):
-        print(previous_level, new_level)
+        # print(previous_level, new_level)
         raise ValueError("Levels should have same length")
 
     for i in range(len(previous_level)):

@@ -1,7 +1,5 @@
 import pandas as pd
 
-from sklearn.linear_model import LogisticRegression
-
 
 def massage_data(X, y, sensitive_feature, f_perc, ranker):
     y = y.copy()
@@ -21,10 +19,10 @@ def massage_data(X, y, sensitive_feature, f_perc, ranker):
     # print(df)
 
     true_male_samples_indices = (
-        df[(df["TARGET"] == True) & (df["SENSITIVE"] == 1.0)].head(num_massages).index
+        df[(df["TARGET"] == True) & (df["SENSITIVE"] == 1.0)].head(num_massages).index  # noqa: E712
     )
     false_female_samples_indices = (
-        df[(df["TARGET"] == False) & (df["SENSITIVE"] == 2.0)].tail(num_massages).index
+        df[(df["TARGET"] == False) & (df["SENSITIVE"] == 2.0)].tail(num_massages).index  # noqa: E712, PLR2004
     )
 
     y[true_male_samples_indices] = False

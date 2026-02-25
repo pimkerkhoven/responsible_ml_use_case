@@ -1,7 +1,10 @@
 import math
 
+import matplotlib
 import matplotlib.pyplot as plt
 
+font = {"size": 22}
+matplotlib.rc("font", **font)
 
 COLORS = ["goldenrod", "violet", "seagreen", "turquoise", "blue"]
 
@@ -15,17 +18,18 @@ def create_radar_plot(data, labels, color_index=0):
     angles = [n / float(n_vars) * 2 * math.pi for n in range(n_vars)]
     angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"polar": True})
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={"polar": True})
 
-    ax.set_xticks(angles[:-1], labels, color="grey", size=8)
+    ax.set_xticks(angles[:-1], labels, color="grey", size="small")
+    ax.tick_params(pad=30)
     ax.set_rlabel_position(0)
     ax.set_yticks(
-        [0.25, 0.5, 0.75, 1], ["0.25", "0.50", "0.75", "1.00"], color="grey", size=7
+        [0.25, 0.5, 0.75, 1], ["0.25", "0.50", "0.75", "1.00"], color="grey", size=10
     )
     ax.set_ylim(0, 1)
 
-    ax.plot(angles, values, linewidth=1, linestyle="solid")
-    ax.fill(angles, values, "b", alpha=0.1)
+    ax.plot(angles, values, linewidth=1, linestyle="solid", color=color)
+    ax.fill(angles, values, "b", alpha=0.1, color=color)
 
     return fig
 

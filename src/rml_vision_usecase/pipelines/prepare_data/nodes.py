@@ -3,14 +3,13 @@ This is a boilerplate pipeline 'prepare_data'
 generated using Kedro 1.0.0
 """
 
-import math
-import tempfile
 import logging
+import math
 import sys
+import tempfile
 
 import numpy as np
 import pandas as pd
-
 from folktables import ACSDataSource, ACSIncome
 from sklearn.model_selection import train_test_split
 
@@ -61,7 +60,7 @@ def create_occ_to_sal(occ_to_soc, soc_to_sal, state):
 
         mapping = soc_to_sal[soc_to_sal["OCC_CODE"] == soc_code][["A_MEAN", "H_MEAN"]]
         index = -1
-        while len(mapping) == 0 and index >= -4:
+        while len(mapping) == 0 and index >= -4:  # noqa: PLR2004
             soc_code = list(soc_code)
             soc_code[index] = "."
             soc_code = "".join(soc_code)

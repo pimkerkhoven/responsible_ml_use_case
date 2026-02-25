@@ -6,6 +6,8 @@ generated using Kedro 1.0.0
 import math
 import random
 
+import matplotlib
+import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
 from fairlearn.metrics import demographic_parity_difference
@@ -17,6 +19,10 @@ from src.rml_vision_usecase.pipelines.train_model.evaluate_privacy import (
 from src.rml_vision_usecase.pipelines.train_model.make_radar_plot import (
     create_radar_plot,
 )
+
+font = {"size": 20}
+
+matplotlib.rc("font", **font)
 
 
 def load_model(model_name, model_version):
@@ -86,8 +92,16 @@ def test_responsible_metrics_model(test_data, model, mlflow_test_data):
     )
     mlflow.log_figure(radar_plot, "radar_plot.png")
 
+    return {
+        "accuracy": accuracy,
+        "precision": precision,
+        "fairness": fairness,
+        "privacy": privacy,
+        "explainability": explainability,
+    }
 
-def _change_label_helper(chance=0):
+
+def _change_label_helper(chance=0.0):
     def change_label(label):
         if label and random.random() < chance:
             return False
@@ -97,7 +111,7 @@ def _change_label_helper(chance=0):
     return change_label
 
 
-def monitor_model(monitor_data, model):
+def monitor_model(monitor_data, model, metrics):  # noqa: PLR0915
     mlflow_monitor_data = mlflow.data.from_pandas(
         monitor_data, name="ACS_INCOME", targets="TARGET"
     )
@@ -112,7 +126,12 @@ def monitor_model(monitor_data, model):
     monitor_y = monitor_data["TARGET"]
 
     prev = 0
-    for i in range(0, len(monitor_X), math.floor(len(monitor_X) / 10)):
+    accuracies = [metrics["accuracy"]]
+    precisions = [metrics["precision"]]
+    fairnesses = [metrics["fairness"]]
+    privacies = [metrics["privacy"]]
+    time_step = 12
+    for i in range(0, len(monitor_X), math.floor(len(monitor_X) / time_step)):
         if i == 0:
             continue
 
@@ -120,10 +139,12 @@ def monitor_model(monitor_data, model):
         y = monitor_y.iloc[prev:i].copy()
         sens = sens_data.iloc[prev:i].copy()
 
-        # y.loc[sens == 1.0] = y[sens == 1.0].map(
-        #     _change_label_helper(i / len(monitor_X))
-        # )
-        y = y.map(_change_label_helper(i / len(monitor_X)))
+        # Change labels for males
+        y.loc[sens == 1.0] = y[sens == 1.0].map(
+            _change_label_helper(i / len(monitor_X))
+        )
+        # print("WOW", i / len(monitor_X))
+        # y = y.map(_change_label_helper(i / len(monitor_X)))
 
         y_pred = model.predict(X.copy())
 
@@ -138,8 +159,44 @@ def monitor_model(monitor_data, model):
             X=monitor_X.iloc[:i].copy(), sex=sens_data.iloc[:i].copy(), model=model
         )
 
-        print(accuracy, precision, fairness, privacy)
+        # print(accuracy, precision, fairness, privacy)
+        accuracies.append(accuracy)
+        precisions.append(precision)
+        fairnesses.append(fairness)
+        privacies.append(privacy)
 
         prev = i
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    ax.set_ylim(0, 1.01)
+    ax.set_xlim(0, time_step)
+    ax.set_title("Accuracy over time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Accuracy")
+
+    ax.plot(accuracies)
+    ax.grid()
+
+    mlflow.log_figure(fig, "monitor_plot.png")
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    ax.set_ylim(0, 1.01)
+    ax.set_xlim(0, time_step)
+    ax.set_title("Metrics over time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Metric score")
+
+    ax.plot(accuracies, label="Accuracy")
+    ax.plot(precisions, label="Precision")
+    ax.plot(fairnesses, label="Fairness")
+    ax.plot(privacies, label="Privacy")
+    ax.grid()
+    ax.legend()
+
+    mlflow.log_figure(fig, "monitor_plot_all.png")
+    plt.close()
 
     # y_pred = model.predict(monitor_X.copy())

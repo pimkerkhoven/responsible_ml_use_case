@@ -33,13 +33,13 @@ def create_pipeline(**kwargs) -> Pipeline:
             Node(
                 func=test_responsible_metrics_model,
                 inputs=["test_data", "loaded_model", "mlflow_test_data"],
-                outputs=None,
+                outputs="metrics",
                 name="test_responsible_metrics_model",
                 tags=["responsible"],
             ),
             Node(
                 func=monitor_model,
-                inputs=["2016.data", "loaded_model"],
+                inputs=["2016.data", "loaded_model", "metrics"],
                 outputs=None,
                 name="monitor_model",
                 tags=["responsible"],

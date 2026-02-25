@@ -163,3 +163,6 @@ mlruns/*
 mlflow_runs/
 
 data/
+
+
+.ruff_chache/

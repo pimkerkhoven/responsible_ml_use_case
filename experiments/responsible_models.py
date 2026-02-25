@@ -1,10 +1,8 @@
 from pathlib import Path
 
 import mlflow
-
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
-from kedro.framework.project import configure_project
 from kedro.utils import find_kedro_project
 
 # Get project root

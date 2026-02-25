@@ -1,10 +1,15 @@
 from pathlib import Path
 
+import matplotlib
 import matplotlib.pyplot as plt
 import mlflow
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
 from kedro.utils import find_kedro_project
+
+font = {"size": 20}
+
+matplotlib.rc("font", **font)
 
 # Get project root
 current_dir = Path(__file__).resolve().parent
@@ -14,19 +19,19 @@ bootstrap_project(Path(project_root))
 mlflow.set_experiment("Test Models")
 
 runs = {
-    # "initial": [
-    #     ("Logistic regression", "initial_logistic_regression"),
-    #     ("Decision tree", "initial_decision_tree"),
-    #     ("Naive bayes", "initial_naive_bayes"),
-    # ],
-    # "improved": [
-    #     ("Logistic regression", "improved_logistic_regression"),
-    #     ("Decision tree", "improved_decision_tree"),
-    #     ("Naive bayes", "improved_naive_bayes"),
-    # ],
+    "initial": [
+        ("Logistic regression", "initial_logistic_regression"),
+        ("Decision tree", "initial_decision_tree"),
+        ("Naive bayes", "initial_naive_bayes"),
+    ],
+    "improved": [
+        ("Logistic regression", "improved_logistic_regression"),
+        ("Decision tree", "improved_decision_tree"),
+        ("Naive bayes", "improved_naive_bayes"),
+    ],
     "responsible": [
-        ("Traditional system", "improved_logistic_regression"),
-        ("Responsible system", "responsible_model"),
+        ("Current ML system", "improved_logistic_regression"),
+        ("Responsible ML system", "responsible_model"),
     ],
 }
 
@@ -54,9 +59,9 @@ with mlflow.start_run():
                         res = session.run(pipeline_name="test_model", tags=[run_name])
                         (fpr, tpr) = res["roc_curve"].load()
 
-                        ax.plot(fpr, tpr, label=model_name.title())
+                        ax.plot(fpr, tpr, label=model_name)
 
-                ax.legend(loc=4)
-                ax.grid()
-                mlflow.log_figure(fig, f"roc_curves_{run_name}.png")
-                plt.close()
+            ax.legend(loc=4)
+            ax.grid()
+            mlflow.log_figure(fig, f"roc_curves_{run_name}.png")
+            plt.close()
